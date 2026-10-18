@@ -21,8 +21,25 @@
     "test:e2e-diary": "node test/e2e-diary.js",
     "test:e2e-storage": "node test/e2e-storage.js"
   },
-  "author": "",
+  "author": "taonai4097-prog",
   "license": "MIT",
+  "keywords": [
+    "electron",
+    "ollama",
+    "local-llm",
+    "vision-model",
+    "activity-tracker",
+    "privacy",
+    "productivity"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taonai4097-prog/LifeLens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/taonai4097-prog/LifeLens/issues"
+  },
+  "homepage": "https://github.com/taonai4097-prog/LifeLens#readme",
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^24.13.3"
