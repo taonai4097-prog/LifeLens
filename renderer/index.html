@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Life Lens · 屏幕活动记录</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">已停止</span>
+        <h1>Life Lens</h1>
+        <span class="subtitle">屏幕活动记录仪</span>
+        <span class="sum-badge" id="sumBadge" hidden>汇总中<span id="sumQueue"></span></span>
+      </div>
+      <div class="controls">
+        <button id="btnStart" class="btn primary">开始</button>
+        <button id="btnStop" class="btn" disabled>停止</button>
+        <button id="btnCheck" class="btn ghost">检测 Ollama</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="monitor">监控</button>
+      <button class="tab" data-tab="dynamic">动态</button>
+      <button class="tab" data-tab="notes">日记</button>
+      <button class="tab" data-tab="diary">回顾</button>
+      <button class="tab" data-tab="dashboard">看板</button>
+      <button class="tab" data-tab="qa">问答</button>
+    </nav>
+
+    <!-- 监控页 -->
+    <main class="layout tab-panel" id="tab-monitor">
+      <section class="panel preview">
+        <h2>最新截屏</h2>
+        <div class="shot-box">
+          <img id="shotImg" alt="最新截屏预览" onerror="this.classList.remove('show');document.getElementById('shotPlaceholder').style.display='block';" />
+          <span id="shotPlaceholder" class="placeholder">暂无截屏</span>
+        </div>
+        <div class="meta" id="shotMeta">—</div>
+      </section>
+
+      <section class="panel activity">
+        <h2>当前活动（模型总结）</h2>
+        <ul id="activityList" class="activity-list">
+          <li class="muted">等待分析…</li>
+        </ul>
+      </section>
+
+      <section class="panel storage">
+        <h2>存储与空间</h2>
+        <div id="storageInfo" class="storage-info">
+          <div class="si-row"><span>数据目录占用</span><b id="siTotal">—</b></div>
+          <div class="si-row"><span>其中截图</span><b id="siShots">—</b></div>
+          <div class="si-row"><span>文本记录(JSON)</span><b id="siRecs">—</b></div>
+          <div class="si-row"><span>近 1 小时截图增长</span><b id="siHourly">—</b></div>
+          <div class="si-row"><span>预估每日新增</span><b id="siDaily">—</b></div>
+          <div class="si-row"><span>磁盘剩余空间</span><b id="siFree">—</b></div>
+          <div class="si-row"><span>保留策略</span><b id="siRetention">—</b></div>
+          <div class="si-row"><span>按当前速率(不保留)</span><b id="siDaysLeft">—</b></div>
+          <div class="si-status" id="siStatus">—</div>
+        </div>
+        <p class="hint">截图已改为 JPEG 压缩 + 降分辨率；默认每 10 分钟只保留一张“代表帧”，并自动清理 7 天前的旧截图。文本记录（问答/日记/看板均依赖它）不受影响。</p>
+      </section>
+
+      <section class="panel settings">
+        <h2>设置</h2>
+        <form id="settingsForm" class="form">
+          <label>
+            截屏间隔（秒）
+            <input type="number" id="fInterval" min="5" step="1" />
+          </label>
+          <label>
+            JPEG 质量（0-100）
+            <input type="number" id="fQuality" min="10" max="100" step="5" />
+          </label>
+          <label>
+            截屏最大宽度（px，0=原分辨率）
+            <input type="number" id="fMaxWidth" min="0" step="100" />
+          </label>
+          <label>
+            旧截图保留天数（0=永久）
+            <input type="number" id="fRetention" min="0" step="1" />
+          </label>
+          <label class="check">
+            <input type="checkbox" id="fRepOnly" />
+            每 10 分钟仅保留一张代表帧（其余不落盘，最省空间）
+          </label>
+          <label>
+            Ollama 地址
+            <input type="text" id="fBaseUrl" />
+          </label>
+          <label>
+            模型名
+            <input type="text" id="fModel" />
+          </label>
+          <label>
+            数据目录
+            <input type="text" id="fDataDir" />
+          </label>
+          <label class="full">
+            系统提示
+            <textarea id="fSystem" rows="2"></textarea>
+          </label>
+          <label class="full">
+            用户提示（单次总结要求）
+            <textarea id="fPrompt" rows="3"></textarea>
+          </label>
+          <div class="form-actions full">
+            <button type="submit" class="btn primary">保存设置</button>
+            <span id="saveHint" class="hint"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel log">
+        <h2>运行日志</h2>
+        <div id="logBox" class="log-box"></div>
+      </section>
+    </main>
+
+    <!-- 动态页 -->
+    <main class="layout-dynamic tab-panel hidden" id="tab-dynamic">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>活动热力图</h2>
+          <div class="heat-range">
+            <label>范围</label>
+            <select id="heatRange">
+              <option value="12">12 小时</option>
+              <option value="24" selected>24 小时</option>
+              <option value="48">48 小时</option>
+              <option value="168">7 天</option>
+            </select>
+          </div>
+        </div>
+        <div class="heatmap-legend">
+          <span><i class="sw cat-娱乐"></i>娱乐</span>
+          <span><i class="sw cat-工作"></i>工作</span>
+          <span><i class="sw cat-学习"></i>学习</span>
+          <span><i class="sw cat-社交"></i>社交</span>
+          <span><i class="sw st-pending"></i>待汇总</span>
+          <span><i class="sw st-empty"></i>无数据</span>
+        </div>
+        <div class="heatmap-scroll">
+          <div id="heatmap" class="heatmap"></div>
+        </div>
+        <div id="heatDetail" class="heat-detail muted">点击任意有数据的格子查看该 10 分钟的汇总。</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>时间线</h2>
+          <button id="btnRefresh" class="btn ghost">刷新</button>
+        </div>
+        <div class="filters">
+          <input id="fProject" type="text" placeholder="按项目名筛选（如：写《…》）" />
+          <select id="fSoftware"><option value="">全部软件</option></select>
+          <input id="fDay" type="date" title="按日期筛选" />
+          <button id="btnClearFilter" class="btn ghost">清除筛选</button>
+        </div>
+        <div id="timeline" class="timeline"></div>
+        <div id="tlMore" class="tl-more">下拉加载更多…</div>
+      </section>
+    </main>
+
+    <!-- 回顾页（AI 自动生成的当日总结，区别于手动“日记”页）-->
+    <main class="tab-panel hidden" id="tab-diary">
+      <section class="panel diary-panel">
+        <div class="panel-head">
+          <h2>回顾</h2>
+          <span class="diary-status" id="diaryStatus"></span>
+        </div>
+        <div class="diary-body">
+          <div class="calendar">
+            <div class="cal-head">
+              <button id="calPrev" class="btn ghost" title="上个月">‹</button>
+              <span id="calTitle" class="cal-title"></span>
+              <button id="calNext" class="btn ghost" title="下个月">›</button>
+              <button id="calToday" class="btn ghost">回到今天</button>
+            </div>
+            <div class="cal-weekdays">
+              <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+            <div class="cal-legend">
+              <span><i class="sw st-empty"></i>无记录</span>
+              <span><i class="sw cal-has-sum"></i>有汇总</span>
+              <span><i class="sw cal-has-diary"></i>有回顾</span>
+            </div>
+          </div>
+          <div class="diary-view">
+            <div class="diary-selected" id="diarySelected"></div>
+            <div class="diary-content" id="diaryContent"></div>
+            <button id="diaryRegen" class="btn ghost" hidden>重新生成</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 日记页（手动随笔：左日历 + 右自由编辑器，支持照片粘贴与 # 标签）-->
+    <main class="tab-panel hidden" id="tab-notes">
+      <section class="panel notes-panel">
+        <div class="panel-head">
+          <h2>日记</h2>
+          <span class="diary-status" id="noteStatus"></span>
+        </div>
+        <div class="diary-body">
+          <div class="calendar">
+            <div class="cal-head">
+              <button id="notesCalPrev" class="btn ghost" title="上个月">‹</button>
+              <span id="notesCalTitle" class="cal-title"></span>
+              <button id="notesCalNext" class="btn ghost" title="下个月">›</button>
+              <button id="notesCalToday" class="btn ghost">回到今天</button>
+            </div>
+            <div class="cal-weekdays">
+              <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+            </div>
+            <div class="cal-grid" id="notesCalGrid"></div>
+            <div class="cal-legend">
+              <span><i class="sw st-empty"></i>无记录</span>
+              <span><i class="sw cal-has-note"></i>有日记</span>
+            </div>
+            <div class="note-tags-box">
+              <div class="note-tags-title">全部标签</div>
+              <div id="noteTagCloud" class="note-tag-cloud">
+                <span class="muted">（还没有标签，写日记时加 #标签 试试）</span>
+              </div>
+            </div>
+          </div>
+          <div class="diary-view">
+            <div class="diary-selected" id="noteSelected"></div>
+            <div
+              id="noteEditor"
+              class="note-editor"
+              contenteditable="true"
+              data-placeholder="写点什么吧…今天做了什么、有什么反思、要解决的问题。&#10;· 支持 Ctrl/⌘+V 粘贴、或直接拖入照片&#10;· 用 #标签 分类，例如 #反思 #待解决（中文可用 #标签# 收尾）"
+            ></div>
+            <div class="note-tags-row">
+              <span class="note-tags-label">标签：</span>
+              <span id="noteTags" class="note-tags-chips"></span>
+              <span class="note-tags-hint" id="noteTagsHint">（自动从正文提取 #标签）</span>
+            </div>
+            <div class="note-actions">
+              <button id="noteSave" class="btn primary">保存</button>
+              <button id="noteClear" class="btn ghost">清空</button>
+              <span id="noteSaveHint" class="hint"></span>
+            </div>
+            <div id="noteTagResults" class="note-tag-results"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 看板页 -->
+    <main class="tab-panel hidden layout-dashboard" id="tab-dashboard">
+      <section class="panel dash-controls">
+        <div class="panel-head">
+          <h2>看板</h2>
+          <div class="dash-range">
+            <select id="dashType">
+              <option value="day">按天</option>
+              <option value="week" selected>按周</option>
+              <option value="month">按月</option>
+              <option value="year">按年</option>
+            </select>
+            <input type="date" id="dashDate" title="参考日期（决定周/月/年归属）" />
+            <button id="dashRefresh" class="btn ghost">刷新</button>
+          </div>
+        </div>
+        <div class="stat-cards" id="statCards"></div>
+      </section>
+
+      <section class="panel">
+        <h2>活动类型时间占比</h2>
+        <div class="chart-box"><canvas id="chartCategory"></canvas></div>
+      </section>
+
+      <section class="panel">
+        <h2>软件使用频次（Top 12）</h2>
+        <div class="chart-box"><canvas id="chartSoftware"></canvas></div>
+      </section>
+
+      <section class="panel">
+        <h2>项目专注时长（Top 12）</h2>
+        <div class="chart-box"><canvas id="chartProject"></canvas></div>
+      </section>
+
+      <section class="panel dash-wide">
+        <h2>时间分布（按周期堆叠）</h2>
+        <div class="chart-box tall"><canvas id="chartSeries"></canvas></div>
+      </section>
+
+      <section class="panel dash-wide">
+        <h2>活跃强度（各周期总时长）</h2>
+        <div class="chart-box tall"><canvas id="chartLine"></canvas></div>
+      </section>
+    </main>
+
+    <!-- 问答页 -->
+    <main class="tab-panel hidden" id="tab-qa">
+      <section class="panel qa-panel">
+        <div class="panel-head">
+          <h2>问答</h2>
+          <span class="qa-hint">基于本地记录，先检索再回答（Ctrl/⌘+Enter 发送）</span>
+        </div>
+        <div class="qa-box">
+          <div class="qa-input-row">
+            <textarea
+              id="qaInput"
+              rows="2"
+              placeholder="问我关于你过去活动的任何事，例如：我最近一周主要在做什么项目？"
+            ></textarea>
+            <button id="qaAsk" class="btn primary">询问</button>
+          </div>
+          <div class="qa-status" id="qaStatus"></div>
+          <div class="qa-steps" id="qaSteps"></div>
+          <div class="qa-answer" id="qaAnswer"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="vendor/chart.umd.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>

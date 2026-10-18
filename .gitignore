@@ -1,0 +1,32 @@
+# 依赖与构建产物（体积巨大且可再生）
+node_modules/
+dist/
+build/
+*.exe
+*.7z
+*.nsis.7z
+
+# 用户真实数据：含截屏与逐小时活动记录，属于高度隐私，绝不入库
+data/
+data.backup-*/
+generated-images/
+*.bak
+
+# 本机环境与日志
+.npmrc
+.workbuddy/
+*.log
+npm-debug.log*
+yarn-error.log
+
+# 一次性脚本：硬编码了真实观看记录等个人数据，不外发
+_fix_data.py
+
+# 个人简历备忘（本地自用，择优整理进 README 后不外发）
+简历项目描述-LifeLens.md
+
+# 中间产物 / 临时文件
+icon_b64.txt
+.DS_Store
+Thumbs.db
+desktop.ini

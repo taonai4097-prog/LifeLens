@@ -1,0 +1,66 @@
+{
+  "name": "life-lens",
+  "version": "1.0.0",
+  "description": "每20秒截屏并用本地 Ollama qwen3-vl 模型分析用户活动，按月建目录、按小时存 JSON 记录的 Electron 应用",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable",
+    "dist:installer": "electron-builder --win nsis",
+    "test": "node test/storage.test.js && node test/analyzer.test.js && node test/summary.test.js && node test/analytics.test.js && node test/diary.test.js",
+    "test": "node test/storage.test.js && node test/storage-retention.test.js && node test/analyzer.test.js && node test/summary.test.js && node test/analytics.test.js && node test/diary.test.js && node test/qa.test.js",
+    "test:storage": "node test/storage.test.js",
+    "test:storage-retention": "node test/storage-retention.test.js",
+    "test:analyzer": "node test/analyzer.test.js",
+    "test:summary": "node test/summary.test.js",
+    "test:analytics": "node test/analytics.test.js",
+    "test:diary": "node test/diary.test.js",
+    "test:qa": "node test/qa.test.js",
+    "test:e2e": "node test/e2e-analyze.js",
+    "test:e2e-summary": "node test/e2e-summary.js",
+    "test:e2e-diary": "node test/e2e-diary.js",
+    "test:e2e-storage": "node test/e2e-storage.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1"
+  },
+  "build": {
+    "appId": "com.lifelens.app",
+    "productName": "LifeLens",
+    "compression": "store",
+    "icon": "assets/icon.ico",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "config.js",
+      "storage.js",
+      "capture.js",
+      "analyzer.js",
+      "ollamaClient.js",
+      "foreground.js",
+      "summary.js",
+      "diary.js",
+      "notes.js",
+      "analytics.js",
+      "qa.js",
+      "renderer/**/*",
+      "package.json",
+      "node_modules/chart.js/**/*",
+      "assets/**/*"
+    ],
+    "extraMetadata": {},
+    "win": {
+      "target": "portable",
+      "artifactName": "LifeLens.exe"
+    }
+  }
+}

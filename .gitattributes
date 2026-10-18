@@ -1,0 +1,10 @@
+# 源码统一以 LF 入库，跨平台 diff 干净
+* text=auto eol=lf
+
+# Windows 批处理必须是 CRLF，否则跳行、变量拼接会诡异出错
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# 二进制资源不做换行转换
+*.ico binary
+*.png binary
