@@ -244,6 +244,11 @@ npm run test:e2e-qa      # 真实调用 Ollama 验证问答 agentic 检索+回�
 npm run test:e2e-summary  # 真实调用 Ollama 验证十分钟结构化汇总（需模型）
 ```
 
+## 交付材料
+
+- `docs/LifeLens-作品集展示版.pptx`（8 页）— 对外介绍：解决什么问题、五个视角、关键取舍、实测数字
+- `docs/LifeLens-技术复盘版.pptx`（12 页）— 内部向：模块划分、数据流、调度与存储策略、已知坑、测试矩阵
+
 ## 隐私声明
 
 LifeLens 记录的是**你自己屏幕上的一切**，这个项目在设计上做了这些约束：
